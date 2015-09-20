@@ -23,10 +23,10 @@ defmodule FlakyConnectionHandler do
     receive do
       {:tcp, socket, data}  ->
         target = lookup.(socket)
-        :ok = :gen_tcp.send(target, data)  
+        :ok = :gen_tcp.send(target, data)
         :inet.setopts(socket, [active: :once])
         loop(local, remote)
-      {:tcp_closed, socket} -> 
+      {:tcp_closed, socket} ->
         target = lookup.(socket)
         :gen_tcp.close(target)
     end

@@ -1,5 +1,4 @@
 defmodule FlakyConnection do
-  
   defstruct [:ref, :port]
   require Logger
 
@@ -8,10 +7,10 @@ defmodule FlakyConnection do
     {:ok, _} = :ranch.start_listener(ref, 100, :ranch_tcp, [port: local_port],
                   FlakyConnectionHandler, [host, port])
     port = :ranch.get_port(ref)
-    %__MODULE__{ref: ref, port: port} 
+    %__MODULE__{ref: ref, port: port}
   end
 
   def stop(%__MODULE__{ref: ref}) do
-    :ranch.stop_listener(ref)  
+    :ranch.stop_listener(ref)
   end
 end
