@@ -15,12 +15,11 @@ conn = FlakyConnection.start('localhost', 1234)
 DatabaseFoo.connect('localhost', conn.port)
 
 # Call FlakyConnection.stop(conn) whenever you want to force a disconnect
-FlakyConneciton.stop(conn)
+FlakyConnection.stop(conn)
 ```
-
 
 Roadmap
 ===============
 
 There are probably a bunch of other ways to emulate a bad network. First thought
-that comes to mind is adding latency.
+that comes to mind is adding latency. 
