@@ -1,6 +1,8 @@
 defmodule FlakyConnectionTest do
   use ExUnit.Case
 
+  require Logger
+
   test "proxying data should work" do
     # This test is pretty hackish, but it accomplishes what it needs to do without
     # requiring excessive synchronization. Basically, we listen on a port in another
@@ -34,5 +36,59 @@ defmodule FlakyConnectionTest do
     receive do
       {:tcp_closed, ^sock} -> :ok
     end
+  end
+
+  test "latency" do
+    parent = self
+    task = Task.async fn ->
+      {:ok, l_sock} = :gen_tcp.listen(11111, [:binary, active: false])
+      {:ok, sock} = :gen_tcp.accept(l_sock)
+      :gen_tcp.controlling_process(sock, parent)
+      sock
+    end
+    conn = FlakyConnection.start('localhost', 11111)
+    {:ok, sock} = :gen_tcp.connect('localhost', conn.port, [:binary, active: false])
+    remote_sock = Task.await task
+    :inet.setopts(remote_sock, [active: :once])
+    :gen_tcp.send(sock, "ping")
+    res = receive do
+      {:tcp, ^remote_sock, "ping"} ->
+        :gen_tcp.send(remote_sock, "pong")
+        :ok
+    after
+      100 -> :timeout  
+    end
+    assert res == :ok
+    FlakyConnection.set_latency(conn,200)
+    :inet.setopts(remote_sock, [active: :once])
+    :gen_tcp.send(sock, "ping")
+    res = receive do
+      {:tcp, ^remote_sock, "ping"} ->
+        :gen_tcp.send(remote_sock, "pong")
+        :ok
+    after
+      100 -> :timeout  
+    end
+    assert res == :timeout
+    res = receive do
+      {:tcp, ^remote_sock, "ping"} ->
+        :gen_tcp.send(remote_sock, "pong")
+        :ok
+    after
+      100 -> :timeout  
+    end
+    assert res == :ok
+    FlakyConnection.set_latency(conn,10)
+    :inet.setopts(remote_sock, [active: :once])
+    :gen_tcp.send(sock, "ping")
+    res = receive do
+      {:tcp, ^remote_sock, "ping"} ->
+        :gen_tcp.send(remote_sock, "pong")
+        :ok
+    after
+      100 -> :timeout  
+    end
+    assert res == :ok
+    FlakyConnection.stop(conn)
   end
 end
