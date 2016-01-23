@@ -49,7 +49,6 @@ defmodule FlakyConnectionHandler do
       latency: latency
     }
   ) when proto in [:ssl, :tcp] do
-    IO.inspect {:received, proto, data}
     {src, dest} = case socket do
       ^local_socket -> {local, remote}
       ^remote_socket -> {remote, local}
@@ -65,7 +64,6 @@ defmodule FlakyConnectionHandler do
       remote: remote = %{socket: remote_socket}
     }
   ) when closed_msg in [:ssl_closed, :tcp_closed] do
-    IO.inspect {:closing, closed_msg}
     target = case socket do
       ^local_socket -> remote
       ^remote_socket -> local
