@@ -35,8 +35,9 @@ defmodule FlakyConnectionHandler do
     {:noreply, %{local: socket, remote: remote, latency: 0}}
   end
 
-  def handle_info({:send, socket, data}, state) do
+  def handle_info({:send, socket, src, data}, state) do
     :ok = Transport.send(socket, data)
+    Transport.setopts(src, [active: :once])
     {:noreply, state}
   end
 
@@ -48,12 +49,12 @@ defmodule FlakyConnectionHandler do
       latency: latency
     }
   ) when proto in [:ssl, :tcp] do
+    IO.inspect {:received, proto, data}
     {src, dest} = case socket do
       ^local_socket -> {local, remote}
       ^remote_socket -> {remote, local}
     end
-    Process.send_after(self, {:send, dest, data}, latency)
-    Transport.setopts(src, [active: :once])
+    Process.send_after(self, {:send, dest, src, data}, latency)
     {:noreply, state}
   end
 
@@ -64,6 +65,7 @@ defmodule FlakyConnectionHandler do
       remote: remote = %{socket: remote_socket}
     }
   ) when closed_msg in [:ssl_closed, :tcp_closed] do
+    IO.inspect {:closing, closed_msg}
     target = case socket do
       ^local_socket -> remote
       ^remote_socket -> local
