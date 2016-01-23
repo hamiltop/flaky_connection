@@ -10,7 +10,7 @@ defmodule FlakyConnectionTest do
     # fairly easily handle both sides of the connection.
     parent = self
     task = Task.async fn ->
-      {:ok, l_sock} = :gen_tcp.listen(11112, [:binary, active: false])
+      {:ok, l_sock} = :gen_tcp.listen(11112, [:binary, active: false, reuseaddr: true])
       {:ok, sock} = :gen_tcp.accept(l_sock)
       :gen_tcp.controlling_process(sock, parent)
       sock
@@ -45,13 +45,14 @@ defmodule FlakyConnectionTest do
     # fairly easily handle both sides of the connection.
     parent = self
     task = Task.async fn ->
-      {:ok, l_sock} = :gen_tcp.listen(11113, [:binary, active: false])
+      {:ok, l_sock} = :gen_tcp.listen(11113, [:binary, active: false, reuseaddr: true])
       {:ok, sock} = :gen_tcp.accept(l_sock)
       :gen_tcp.controlling_process(sock, parent)
       sock
     end
-    conn = FlakyConnection.start('localhost', 11113, [ssl: [keyfile: "test/cert/server.key", certfile: "test/cert/server.crt"]])
-    {:ok, sock} = :ssl.connect('localhost', conn.port, [:binary, active: false])
+    conn = FlakyConnection.start('localhost', 11113, [ssl: [keyfile: "./test/cert/server.key", certfile: "./test/cert/server.crt"]])
+    {:ok, sock} = :ssl.connect('localhost', conn.port,
+      [:binary, active: false, verify: :verify_peer, cacertfile: "./test/cert/rootCA.crt"])
     remote_sock = Task.await task
     :inet.setopts(remote_sock, [active: :once])
     :ssl.send(sock, "ping")
@@ -76,7 +77,7 @@ defmodule FlakyConnectionTest do
   test "latency" do
     parent = self
     task = Task.async fn ->
-      {:ok, l_sock} = :gen_tcp.listen(11111, [:binary, active: false])
+      {:ok, l_sock} = :gen_tcp.listen(11111, [:binary, active: false, reuseaddr: true])
       {:ok, sock} = :gen_tcp.accept(l_sock)
       :gen_tcp.controlling_process(sock, parent)
       sock
